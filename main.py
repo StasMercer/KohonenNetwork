@@ -4,24 +4,27 @@ import numpy as np
 import random
 from matplotlib.widgets import Button
 
-TIME = 2
-WIDTH = 1
-HEIGHT = 1
+TIME = 1
+WIDTH = 10
+HEIGHT = 10
 
 class Node:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
+    def __init__(self, cords):
+        self.cords = np.array(cords)
         self.weights = get_random_weights()
 
     def get_rgb(self):
         return (self.weights[0], self.weights[1], self.weights[2])
 
     def update_weights(self, a, b, input_vector):
-        self.weights[0] += a * b * (input_vector[0] - self.weights[0])
-        self.weights[1] += a * b * (input_vector[1] - self.weights[1])
-        self.weights[2] += a * b * (input_vector[2] - self.weights[2])
-        ax.plot(self.x, self.y, 'o', color=self.get_rgb())
+        for i in range(3):
+            self.weights[i] += a * b * (input_vector[i] - self.weights[i])
+            if self.weights[i] > 1:
+                self.weights[i] = 1
+            elif self.weights[i] < 0:
+                self.weights[i] = 0
+
+        ax.plot(self.cords[0], self.cords[1], 'o', color=self.get_rgb())
         ax.figure.canvas.draw()
 
 
@@ -44,20 +47,20 @@ class Kohonen:
         print(nodes)
         print('train printed')
 
-        n_input_vectors = 2
+        n_input_vectors = 3
         input_vectors = np.array([get_random_weights() for _ in range(n_input_vectors)])
 
-        for iteration_number in range(TIME):
-            for input_vector in input_vectors:
+        for input_vector in input_vectors:
+            for iteration_number in range(TIME):
                 best_matching_unit = self.get_best_matching_unit(input_vector, nodes)
 
                 learning_rate = self.get_learning_rate(iteration_number)
                 
                 for node in nodes:
-                    if node != best_matching_unit: # ?? is it in need
-                        distance = np.linalg.norm(best_matching_unit.weights - node.weights)
-                        neibourghood = self.neibourghood_function(iteration_number, distance)
-                        node.update_weights(learning_rate, neibourghood, input_vector)
+                    # if node != best_matching_unit: # ?? is it in need
+                    distance = np.linalg.norm(best_matching_unit.cords - node.cords)
+                    neibourghood = self.neibourghood_function(iteration_number, distance)
+                    node.update_weights(learning_rate, neibourghood, input_vector)
 
     def get_best_matching_unit(self, input_vector, nodes):
         min_distance = math.sqrt(3) # sqrt((0 - 1) ** 2 + (0 - 1) ** 2 + (0 - 1) ** 2)
@@ -83,13 +86,13 @@ def onclick(event):
         #   (event.button, event.x, event.y, event.xdata, event.ydata))
     
     if event.inaxes == ax:
-        node = Node(event.xdata, event.ydata)
+        node = Node((event.xdata, event.ydata))
         nodes.append(node)
         ax.plot(event.xdata, event.ydata, 'o', color=node.get_rgb())
         ax.figure.canvas.draw()
         
     if event.inaxes == btn_train_axes:
-        start_radius = max(WIDTH, HEIGHT) / 4
+        start_radius = max(HEIGHT, WIDTH) / 8
         time_constant = TIME / math.log(start_radius)
         model = Kohonen(start_radius, 0.8, time_constant) # set parameters not in this function
         model.train(nodes)

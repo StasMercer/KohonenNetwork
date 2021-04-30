@@ -1,9 +1,7 @@
 import matplotlib.pyplot as plt
 import math
 import numpy as np
-import random
 from matplotlib.widgets import Button
-from numpy.lib.function_base import append
 
 TIME = 10
 WIDTH = 1
@@ -17,8 +15,6 @@ class Kohonen:
         self.time_constant = time_constant
         self.nx, self.ny = (10, 10)
         self.weights = np.meshgrid(np.linspace(0.25, 0.75, self.nx), np.linspace(0.25, 0.75, self.ny))
-
-        print(self.weights)
 
         # draw kohonen layer nodes
         plt.plot(self.weights[0], self.weights[1], 'ok')
@@ -49,12 +45,10 @@ class Kohonen:
         return math.exp(-1 * (distance ** 2) / (2 * self.get_radius(iteration_number)))
         
     def train(self, input_vectors):
-        print(input_vectors[0])
-        print('train printed')
 
         # for every iteration in defined TIME
         for iteration_number in range(TIME):
-
+            
             # for every input vector in input data
             for point in input_vectors:
 
@@ -93,9 +87,13 @@ class Kohonen:
             for j in range(self.nx):
                 for i in range(self.ny - 1):
                     ax.plot([self.weights[0][i][j], self.weights[0][i + 1][j]], [self.weights[1][i][j], self.weights[1][i + 1][j]], '-k')
+            
+            
             ax.set_xlim([0, WIDTH])
             ax.set_ylim([0, HEIGHT])
-            ax.figure.canvas.draw()
+            ax.figure.canvas.draw_idle()
+            ax.figure.canvas.start_event_loop(0.05)
+            
 
     def get_best_matching_unit(self, point):
         min_distance = math.sqrt(len(point))
@@ -131,25 +129,28 @@ class Kohonen:
 
 
 def onclick(event):
-    # print(event)
-
-    # print('button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
-        #   (event.button, event.x, event.y, event.xdata, event.ydata))
     
+    # check if axis is equal to plot area and add point cords
+    # to input vector
     if event.inaxes == ax:
-        
         input_vector.append([event.xdata, event.ydata])
         ax.plot(event.xdata, event.ydata, 'or')
         ax.figure.canvas.draw()
-        
+
+    # check if axis is equal to btn train
     if event.inaxes == btn_train_axes:
-         # set parameters not in this function
+        
         model.train(input_vector)
     
+    # check if axis is equal to btn reset
     if event.inaxes == btn_reset_axes:
+
+        # clear vector and reset weights
         input_vector.clear()
         model.reset_weights()
         ax.cla()
+
+        # draw network
         ax.plot(model.weights[0], model.weights[1], 'ok')
         for j in range(model.ny):
             for i in range(model.nx - 1):
@@ -164,18 +165,14 @@ def onclick(event):
 if __name__ == '__main__':
     plt.subplots_adjust(bottom=0.2)
     ax = plt.subplot()
-    a = [1, 2, 3]
-    for ai in a:
-        a[0] = 4
-    print(a)
-    nodes = []
+    
     ax.set_xlim([0, WIDTH])
     ax.set_ylim([0, HEIGHT])
     
     input_vector = []
-    start_radius = max(HEIGHT, WIDTH) / 32
-    time_constant = TIME / math.log(start_radius) * 32
-    model = Kohonen(start_radius, 0.1, time_constant)
+    start_radius = max(HEIGHT, WIDTH) / 64
+    time_constant = TIME / math.log(start_radius) * 128
+    model = Kohonen(start_radius, 0.05, time_constant)
 
     ax.figure.canvas.mpl_connect('button_press_event', onclick)
 
